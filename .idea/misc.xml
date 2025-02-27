@@ -3,4 +3,5 @@
   <component name="Black">
     <option name="sdkName" value="Poetry (firefly.py)" />
   </component>
+  <component name="ProjectRootManager" version="2" project-jdk-name="Poetry (firefly.py)" project-jdk-type="Python SDK" />
 </project>

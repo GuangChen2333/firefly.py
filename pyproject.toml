@@ -1,17 +1,23 @@
 [project]
-name = "firefly-py"
+name = "firefly.py"
 version = "0.1.0"
 description = ""
 authors = [
-    {name = "Guang_Chen_",email = "guangchenworks@outlook.com"}
+    { name = "Guang_Chen_", email = "guangchenworks@outlook.com" }
 ]
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "pyautogui (>=0.9.54,<0.10.0)",
+    "pillow (>=11.1.0,<12.0.0)",
+    "pywin32 (>=308,<309)",
+    "psutil (>=7.0.0,<8.0.0)"
 ]
 
 [tool.poetry]
-packages = [{include = "firefly"}]
+packages = [
+    { include = "firefly", from = "src" }
+]
 
 
 [build-system]
