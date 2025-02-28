@@ -17,6 +17,7 @@ from ._enums import FindConditions, MouseButtons
 from ._exceptions import WindowNotFoundError
 from ._structures import Position, Rect, MatchResult
 
+
 class Firefly:
     def __init__(self, hwnd: int):
         self._hwnd = hwnd
@@ -146,15 +147,11 @@ class Firefly:
         screenshot = cv2.cvtColor(numpy.array(self.screenshot()), cv2.COLOR_RGB2BGR)
         template = cv2.cvtColor(numpy.array(template), cv2.COLOR_RGB2BGR)
         height, width = template.shape[:2]
-        rect = self.get_rect()
 
         result = cv2.matchTemplate(screenshot, template, cv2.TM_CCOEFF_NORMED)
         _, max_val, _, max_loc = cv2.minMaxLoc(result)
 
-        return MatchResult(
-            Position.from_xy(max_loc[0] + int(width / 2), max_loc[1] + int(height / 2), rect),
-            max_val
-        )
+        return MatchResult(Rect(max_loc[0], max_loc[1], width, height), max_val)
 
     def exist(self, template: PIL.Image.Image, threshold: float) -> bool:
         result = self.match(template)
@@ -223,3 +220,40 @@ class Firefly:
         # noinspection PyTypeChecker
         pyautogui.dragRel(x_offset, y_offset, duration=duration, button=button.value)
 
+    @staticmethod
+    def scroll(clicks: float):
+        pyautogui.scroll(clicks)
+
+    @staticmethod
+    def mouse_down(x: int, y: int, button: MouseButtons = MouseButtons.LEFT):
+        # noinspection PyTypeChecker
+        pyautogui.mouseDown(x, y, button=button.value)
+
+    @staticmethod
+    def mouse_up(x: int, y: int, button: MouseButtons = MouseButtons.LEFT):
+        # noinspection PyTypeChecker
+        pyautogui.mouseUp(x, y, button=button.value)
+
+    @staticmethod
+    def write(msg: str, interval: Optional[float] = 0.0):
+        pyautogui.write(msg, interval=interval)
+
+    @staticmethod
+    def press(keys: list[str], interval: Optional[float] = 0.0):
+        pyautogui.press(keys, interval=interval)
+
+    @staticmethod
+    def key_down(key: str):
+        pyautogui.keyDown(key)
+
+    @staticmethod
+    def key_up(key: str):
+        pyautogui.keyUp(key)
+
+    @staticmethod
+    def hot_key(*keys):
+        pyautogui.hotkey(*keys)
+
+    def get_mouse_position(self):
+        pos = pyautogui.position()
+        return Position.from_xy(int(pos.x), int(pos.y), self.get_rect())

@@ -3,26 +3,10 @@ from typing import Tuple
 
 class Rect:
     def __init__(self, left: int, top: int, width: int, height: int):
-        self._left = left
-        self._top = top
-        self._width = width
-        self._height = height
-
-    @property
-    def left(self) -> int:
-        return self._left
-
-    @property
-    def top(self) -> int:
-        return self._top
-
-    @property
-    def width(self) -> int:
-        return self._width
-
-    @property
-    def height(self) -> int:
-        return self._height
+        self.left = left
+        self.top = top
+        self.width = width
+        self.height = height
 
     def __repr__(self):
         return f"Rect(left={self.left}, top={self.top}, width={self.width}, height={self.height})"
@@ -33,33 +17,24 @@ class Rect:
     def __iter__(self):
         return iter(self.to_region())
 
+    def center(self):
+        return Position.from_xy(
+            self.left + int(self.width / 2),
+            self.top + int(self.height / 2),
+            self
+        )
+
 
 class Position:
     def __init__(self, left: int, top: int, right: int, bottom: int):
-        self._left = left
-        self._top = top
-        self._right = right
-        self._bottom = bottom
+        self.left = left
+        self.top = top
+        self.right = right
+        self.bottom = bottom
 
     @classmethod
     def from_xy(cls, x: int, y: int, rect: Rect):
         return cls(x, y, (rect.width - x), (rect.height - y))
-
-    @property
-    def left(self) -> int:
-        return self._left
-
-    @property
-    def top(self) -> int:
-        return self._top
-
-    @property
-    def right(self) -> int:
-        return self._right
-
-    @property
-    def bottom(self) -> int:
-        return self._bottom
 
     def __repr__(self):
         return f"Position(left={self.left}, top={self.top}, right={self.right}, bottom={self.bottom})"
@@ -79,17 +54,17 @@ class Position:
 
 
 class MatchResult:
-    def __init__(self, position: Position, confidence: float):
-        self._position = position
+    def __init__(self, rect: Rect, confidence: float):
+        self._rect = rect
         self._confidence = confidence
 
     @property
-    def position(self):
-        return self._position
+    def rect(self):
+        return self._rect
 
     @property
     def confidence(self):
         return self._confidence
 
     def __repr__(self):
-        return f"MatchResult(position={self.position}, confidence={self.confidence})"
+        return f"MatchResult(rect={self.rect}, confidence={self.confidence})"

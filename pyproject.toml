@@ -1,10 +1,11 @@
 [project]
 name = "firefly.py"
-version = "0.1.0"
-description = ""
+version = "1.0.0"
+description = "Python 基于图像识别的窗口自动化库 | Python-based window automation library with image recognition."
 authors = [
-    { name = "Guang_Chen_", email = "guangchenworks@outlook.com" }
+    { name = "GuangChen23333", email = "guangchenworks@outlook.com" }
 ]
+license = { text = "MIT" }
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -19,6 +20,10 @@ dependencies = [
 packages = [
     { include = "firefly", from = "src" }
 ]
+
+[project.urls]
+repository = "https://github.com/GuangChen2333/firefly.py"
+"Bug Tracker" = "https://github.com/GuangChen2333/firefly.py/issues"
 
 [tool.poetry.group.dev.dependencies]
 matplotlib = "^3.10.1"
