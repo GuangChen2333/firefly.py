@@ -1,6 +1,7 @@
 import ctypes
+import time
 
-from typing import TypeVar, Optional
+from typing import TypeVar, Optional, Tuple
 
 import PIL.Image
 import pyautogui
@@ -9,10 +10,12 @@ import win32gui
 import win32con
 import win32process
 import psutil
+import cv2
+import numpy
 
-from ._enums import FindConditions
+from ._enums import FindConditions, MouseButtons
 from ._exceptions import WindowNotFoundError
-from ._structures import Position, Rect
+from ._structures import Position, Rect, MatchResult
 
 T = TypeVar("T", bound="Window")
 
@@ -39,7 +42,7 @@ class Window:
             title: Optional[str] = None,
             process_name: Optional[str] = None,
             process_id: Optional[int] = None
-    ) -> T:
+    ):
         required_conditions = []
         if class_name is not None:
             required_conditions.append((FindConditions.CLASS_NAME, class_name))
@@ -114,7 +117,7 @@ class Window:
         return self._class_name
 
     @property
-    def pid(self) -> str:
+    def pid(self) -> int:
         return self._pid
 
     @property
@@ -138,8 +141,88 @@ class Window:
     def screenshot(self) -> PIL.Image.Image:
         return pyautogui.screenshot(region=self.get_rect().to_region())
 
-
-
     def show(self) -> None:
         win32gui.ShowWindow(self.hwnd, win32con.SW_RESTORE)
         win32gui.SetForegroundWindow(self.hwnd)
+
+    def match(self, template: PIL.Image.Image) -> MatchResult:
+        screenshot = cv2.cvtColor(numpy.array(self.screenshot()), cv2.COLOR_RGB2BGR)
+        template = cv2.cvtColor(numpy.array(template), cv2.COLOR_RGB2BGR)
+        height, width = template.shape[:2]
+        rect = self.get_rect()
+
+        result = cv2.matchTemplate(screenshot, template, cv2.TM_CCOEFF_NORMED)
+        _, max_val, _, max_loc = cv2.minMaxLoc(result)
+
+        return MatchResult(
+            Position.from_xy(max_loc[0] + int(width / 2), max_loc[1] + int(height / 2), rect),
+            max_val
+        )
+
+    def exist(self, template: PIL.Image.Image, threshold: float) -> bool:
+        result = self.match(template)
+        return result.confidence >= threshold
+
+    def wait(self, template: PIL.Image.Image, threshold: float, interval: Optional[float] = 0.5) -> MatchResult:
+        while True:
+            result = self.match(template)
+            if result.confidence >= threshold:
+                return result
+            time.sleep(interval)
+
+    def click(
+            self,
+            rel_position: Position,
+            button: MouseButtons = MouseButtons.LEFT,
+            times: Optional[int] = 1,
+            interval: Optional[float] = 0.0,
+            duration: Optional[float] = 0.0,
+    ) -> None:
+        abs_position = rel_position.to_abs_position(self.get_rect())
+        # noinspection PyTypeChecker
+        pyautogui.click(
+            *abs_position.to_xy(),
+            button=button.value,
+            clicks=times,
+            interval=interval,
+            duration=duration
+        )
+
+    def left_click(self, rel_position: Position) -> None:
+        self.click(rel_position, button=MouseButtons.LEFT)
+
+    def double_click(self, rel_position: Position) -> None:
+        self.click(rel_position, button=MouseButtons.LEFT, times=2)
+
+    def right_click(self, rel_position: Position) -> None:
+        self.click(rel_position, button=MouseButtons.RIGHT)
+
+    def middle_click(self, rel_position: Position) -> None:
+        self.click(rel_position, button=MouseButtons.MIDDLE)
+
+    def move_to(self, rel_position: Position, duration: Optional[float] = 0.0):
+        pyautogui.moveTo(*rel_position.to_abs_position(self.get_rect()).to_xy(), duration=duration)
+
+    def drag_to(
+            self,
+            rel_position: Position,
+            button: MouseButtons = MouseButtons.LEFT,
+            duration: Optional[float] = 0.0
+    ):
+        # noinspection PyTypeChecker
+        pyautogui.dragTo(*rel_position.to_abs_position(self.get_rect()).to_xy(), duration=duration, button=button.value)
+
+    @staticmethod
+    def move_rel(x_offset: int, y_offset: int, duration: Optional[float] = 0.0):
+        pyautogui.moveRel(x_offset, y_offset, duration=duration)
+
+    @staticmethod
+    def drag_rel(
+            x_offset: int,
+            y_offset: int,
+            button: MouseButtons = MouseButtons.LEFT,
+            duration: Optional[float] = 0.0
+    ):
+        # noinspection PyTypeChecker
+        pyautogui.dragRel(x_offset, y_offset, duration=duration, button=button.value)
+
