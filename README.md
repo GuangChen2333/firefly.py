@@ -33,6 +33,9 @@ print(f"{hex(game.hwnd)} -> {game.title} {game.get_rect()}")
 # 或者你也可以使用窗口句柄直接绑定
 # game = Firefly(0x6c0a52)
 
+# 现在让游戏处于前台
+game.show()
+
 # firefly.py 实现了很多必要的方法以供你实现你的自动化
 # 下面将实现等待 talk.png 出现并点击它
 
