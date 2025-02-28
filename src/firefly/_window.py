@@ -1,7 +1,7 @@
 import ctypes
 import time
 
-from typing import TypeVar, Optional, Tuple
+from typing import Optional
 
 import PIL.Image
 import pyautogui
@@ -17,10 +17,7 @@ from ._enums import FindConditions, MouseButtons
 from ._exceptions import WindowNotFoundError
 from ._structures import Position, Rect, MatchResult
 
-T = TypeVar("T", bound="Window")
-
-
-class Window:
+class Firefly:
     def __init__(self, hwnd: int):
         self._hwnd = hwnd
 

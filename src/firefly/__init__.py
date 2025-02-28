@@ -1,1 +1,1 @@
-from ._window import Window
+from ._window import Firefly
