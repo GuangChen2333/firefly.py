@@ -16,8 +16,24 @@ class Window:
     def __init__(self, hwnd: int):
         self._hwnd = hwnd
 
+        self._class_name = win32gui.GetClassName(self._hwnd)
+        self._title = win32gui.GetWindowText(self._hwnd)
+        _, self._pid = win32process.GetWindowThreadProcessId(self._hwnd)
+        self._process_name = ""
+
+        try:
+            process = psutil.Process(self._pid)
+            self._process_name = process.name()
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            pass
+
     @classmethod
-    def find(cls, class_name: Optional[str] = None, title: Optional[str] = None, process_name: Optional[str] = None):
+    def find(
+            cls,
+            class_name: Optional[str] = None,
+            title: Optional[str] = None,
+            process_name: Optional[str] = None
+    ) -> T:
         required_conditions = []
         if class_name is not None:
             required_conditions.append((FindConditions.CLASS_NAME, class_name))
@@ -50,9 +66,8 @@ class Window:
                         _, pid = win32process.GetWindowThreadProcessId(hwnd)
                         if pid is not None:
                             try:
-                                with psutil.Process(pid) as p:
-                                    p: psutil.Process
-                                    actual = p.name()
+                                process = psutil.Process(pid)
+                                actual = process.name()
                             except (psutil.NoSuchProcess, psutil.AccessDenied):
                                 pass
 
@@ -77,8 +92,24 @@ class Window:
         return cls(best_hwnd)
 
     @property
-    def hwnd(self):
+    def hwnd(self) -> int:
         return self._hwnd
+
+    @property
+    def title(self) -> str:
+        return self._title
+
+    @property
+    def class_name(self) -> str:
+        return self._class_name
+
+    @property
+    def pid(self) -> str:
+        return self._pid
+
+    @property
+    def process_name(self) -> str:
+        return self._process_name
 
     def show(self) -> None:
         win32gui.ShowWindow(self.hwnd, win32con.SW_RESTORE)
