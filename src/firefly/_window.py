@@ -3,10 +3,11 @@ from typing import TypeVar, Optional
 # noinspection PyPackageRequirements
 import win32gui
 import win32con
-import psutil
 import win32process
+import psutil
 
-from ._exceptions import WindowNotFoundError, WindowOperationError
+from ._enums import FindConditions
+from ._exceptions import WindowNotFoundError
 
 T = TypeVar("T", bound="Window")
 
@@ -17,61 +18,60 @@ class Window:
 
     @classmethod
     def find(cls, class_name: Optional[str] = None, title: Optional[str] = None, process_name: Optional[str] = None):
-        windows = []
+        required_conditions = []
+        if class_name is not None:
+            required_conditions.append((FindConditions.CLASS_NAME, class_name))
+        if title is not None:
+            required_conditions.append((FindConditions.TITLE, title))
+        if process_name is not None:
+            required_conditions.append((FindConditions.PROCESS_NAME, process_name))
 
-        def enum_callback(w_hwnd: int, _) -> bool:
-            nonlocal windows
-
-            w_class_name = win32gui.GetClassName(w_hwnd)
-            w_windows_title = win32gui.GetWindowText(w_hwnd)
-            _, w_pid = win32process.GetWindowThreadProcessId(w_hwnd)
-            w_process_name = None
-
-            if w_pid:
-                try:
-                    w_process = psutil.Process(w_pid)
-                    w_process_name = w_process.name()
-                except (psutil.NoSuchProcess, psutil.AccessDenied):
-                    pass
-
-            windows.append(
-                (
-                    w_hwnd,
-                    w_class_name,
-                    w_windows_title,
-                    w_process_name
-                )
-            )
-
-            return True
-
-        conditions = [class_name, title, process_name]
-        num_conditions = sum(1 for condition in conditions if condition is not None)
+        num_conditions = len(required_conditions)
 
         if num_conditions == 0:
             raise TypeError("At least one search condition required (class_name, title or process_name)")
 
+        max_confidence = 0.0
+        best_hwnd = 0
+
+        def enum_callback(hwnd: int, _):
+            nonlocal max_confidence, best_hwnd
+            current_matches = 0
+
+            for condition_type, expected in required_conditions:
+                actual = None
+
+                match condition_type:
+                    case FindConditions.CLASS_NAME:
+                        actual = win32gui.GetClassName(hwnd)
+                    case FindConditions.TITLE:
+                        actual = win32gui.GetWindowText(hwnd)
+                    case FindConditions.PROCESS_NAME:
+                        _, pid = win32process.GetWindowThreadProcessId(hwnd)
+                        if pid is not None:
+                            try:
+                                with psutil.Process(pid) as p:
+                                    p: psutil.Process
+                                    actual = p.name()
+                            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                                pass
+
+                if actual == expected:
+                    current_matches += 1
+                else:
+                    break
+
+            if current_matches > 0:
+                confidence = current_matches / num_conditions
+                if confidence > max_confidence:
+                    max_confidence = confidence
+                    best_hwnd = hwnd
+
+            return True
+
         win32gui.EnumWindows(enum_callback, None)
 
-        max_confidence = 0.0
-        best_hwnd = None
-
-        for t_hwnd, t_class_name, t_title, t_process_name in windows:
-            score = 0
-
-            if t_class_name and t_class_name == class_name:
-                score += 1
-            if t_title and t_title == title:
-                score += 1
-            if t_process_name and t_process_name == process_name:
-                score += 1
-
-            confidence = score / num_conditions
-            if confidence > max_confidence:
-                max_confidence = confidence
-                best_hwnd = t_hwnd
-
-        if best_hwnd is None:
+        if best_hwnd == 0:
             raise WindowNotFoundError("Cannot find the window by conditions.")
 
         return cls(best_hwnd)
